@@ -2,19 +2,32 @@
 <html lang="en">
 
 <head>
-	<title>Twitter Share Blocked App {% block title %}{% endblock %}</title>
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+
+    <title>Share Blocked Twitter Accounts {% block title %}{% endblock %}</title>
 </head>
 
 <body>
-	<div class="container">
-		<h1>Twitter Share Blocked App</h1>
-		{% block containercontent %}{% endblock %}
-		<hr>
-		<div class="footer">
-			<p class="text-muted"><small>The source code for this project can be found at <a href="https://github.com/juliusfrost/twitter-share-blocked">github.com/juliusfrost/twitter-share-blocked</a>.</small></p>
-		</div>
-	</div>
+<div class="container-md">
+    <h1>Share Blocked Twitter Accounts</h1>
+    {% block containercontent %}{% endblock %}
+    <hr>
+    <div class="footer">
+        <p class="text-muted"><small>The source code for this project can be found at <a
+                href="https://github.com/juliusfrost/twitter-share-blocked">github.com/juliusfrost/twitter-share-blocked</a>.</small>
+        </p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

@@ -1,8 +1,8 @@
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
-import re
 
 import oauth2 as oauth
 import twitter
@@ -171,10 +171,11 @@ def import_blocked():
     twitter_api = check_authenticated(session)
     if twitter_api is None:
         return render_template('error.html', error_message='Not authenticated yet!')
-    imported_accounts = request.form.get('importAccounts', None)
-    if imported_accounts is not None:
-        add_to_blocked(twitter_api, imported_accounts)
-        flash('Imported accounts to blocked list.')
+    if request.method == 'POST':
+        imported_accounts = request.form.get('importAccounts', None)
+        if imported_accounts is not None:
+            add_to_blocked(twitter_api, imported_accounts)
+            flash('Imported accounts to blocked list.')
     return render_template('import.html')
 
 
@@ -196,9 +197,9 @@ def export():
 
 
 def get_blocked_list(twitter_api: twitter.Api):
-    blocked_list = "id, screen_name,\n"
+    blocked_list = ""
     for user in twitter_api.GetBlocks():
-        blocked_list += str(user.id) + ', ' + user.screen_name + ',\n'
+        blocked_list += user.screen_name + '\n'
     return blocked_list
 
 

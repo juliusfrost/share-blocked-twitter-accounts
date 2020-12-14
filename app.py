@@ -5,7 +5,7 @@ import urllib.request
 
 import oauth2 as oauth
 import twitter
-from flask import Flask, render_template, request, url_for, session
+from flask import Flask, render_template, request, url_for, session, redirect
 
 app = Flask(__name__)
 
@@ -32,6 +32,8 @@ app.config.from_pyfile('config.cfg', silent=True)
 
 @app.route('/')
 def hello():
+    if session.get('authenticated', False):
+        return redirect(url_for('welcome'))
     return render_template('index.html')
 
 
@@ -58,14 +60,14 @@ def start():
     oauth_token_secret = request_token[b'oauth_token_secret'].decode('utf-8')
 
     session[oauth_token] = oauth_token_secret
-    return render_template('start.html', authorize_url=authorize_url, oauth_token=oauth_token,
-                           request_token_url=request_token_url)
+    redirect_url = authorize_url + '?oauth_token=' + oauth_token
+    return redirect(redirect_url)
 
 
-@app.route('/welcome')
-def welcome():
+@app.route('/callback')
+def callback():
     if session.get('authenticated', False):
-        return welcome_user(session)
+        return redirect(url_for('welcome'))
 
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle
@@ -111,18 +113,31 @@ def welcome():
     session['oauth_token'] = real_oauth_token
     session['oauth_token_secret'] = real_oauth_token_secret
 
-    return welcome_user(session)
+    del session[oauth_token]
+
+    return redirect(url_for('welcome'))
 
 
-def welcome_user(app_session):
+@app.route('/welcome')
+def welcome():
+    if not session.get('authenticated', False):
+        return render_template('error.html', error_message='Not authenticated yet!')
     twitter_api = twitter.Api(
         consumer_key=app.config['APP_CONSUMER_KEY'],
         consumer_secret=app.config['APP_CONSUMER_SECRET'],
-        access_token_key=app_session['oauth_token'],
-        access_token_secret=app_session['oauth_token_secret']
+        access_token_key=session['oauth_token'],
+        access_token_secret=session['oauth_token_secret']
     )
     name = twitter_api.VerifyCredentials().name
     return render_template('welcome.html', name=name)
+
+
+@app.route('/signout')
+def signout():
+    del session['oauth_token']
+    del session['oauth_token_secret']
+    session['authenticated'] = False
+    return redirect('/')
 
 
 @app.route('/export')

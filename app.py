@@ -10,7 +10,7 @@ from flask import Flask, render_template, request, url_for, session, redirect, f
 
 app = Flask(__name__)
 
-app.debug = True
+app.debug = False
 
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 access_token_url = 'https://api.twitter.com/oauth/access_token'

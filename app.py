@@ -66,6 +66,10 @@ def start():
 
 @app.route('/welcome')
 def welcome():
+    global twitter_api
+    if isinstance(twitter_api, twitter.Api):
+        welcome_user()
+
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle
     oauth_token = request.args.get('oauth_token')
@@ -106,17 +110,17 @@ def welcome():
         'utf-8')
 
     # create python-twitter client
-    global twitter_api
     twitter_api = twitter.Api(consumer_key=app.config['APP_CONSUMER_KEY'],
                               consumer_secret=app.config['APP_CONSUMER_SECRET'],
                               access_token_key=real_oauth_token,
                               access_token_secret=real_oauth_token_secret)
 
+    return welcome_user()
+
+
+def welcome_user():
+    assert isinstance(twitter_api, twitter.Api)
     name = twitter_api.VerifyCredentials().name
-
-    # don't keep this token and secret in memory any longer
-    del oauth_store[oauth_token]
-
     return render_template('welcome.html', name=name)
 
 

@@ -153,7 +153,7 @@ def export():
 def get_blocked_list(twitter_api: twitter.Api):
     blocked_list = "id, screen_name,\n"
     for user in twitter_api.GetBlocks():
-        blocked_list += user.id + ', ' + user.screen_name + ',\n'
+        blocked_list += str(user.id) + ', ' + user.screen_name + ',\n'
     return blocked_list
 
 

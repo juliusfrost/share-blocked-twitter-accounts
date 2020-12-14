@@ -2,7 +2,9 @@
 {% block title %}success{% endblock %}
 {% block containercontent %}
 <h2>Exported Blocked List</h2>
-<p>
-    {{ blocked_list }}
-</p>
+<pre class="pre-scrollable">
+    <code>
+        {{ blocked_list }}
+    </code>
+</pre>
 {% endblock %}

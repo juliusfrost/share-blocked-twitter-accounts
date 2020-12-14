@@ -1,11 +1,11 @@
 import os
-from flask import Flask, render_template, request, url_for
-import oauth2 as oauth
-import urllib.request
-import urllib.parse
 import urllib.error
-import json
+import urllib.parse
+import urllib.request
+
+import oauth2 as oauth
 import twitter
+from flask import Flask, render_template, request, url_for
 
 app = Flask(__name__)
 
@@ -64,8 +64,8 @@ def start():
                            request_token_url=request_token_url)
 
 
-@app.route('/callback')
-def callback():
+@app.route('/welcome')
+def welcome():
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle
     oauth_token = request.args.get('oauth_token')
@@ -100,9 +100,6 @@ def callback():
     resp, content = client.request(access_token_url, "POST")
     access_token = dict(urllib.parse.parse_qsl(content))
 
-    screen_name = access_token[b'screen_name'].decode('utf-8')
-    user_id = access_token[b'user_id'].decode('utf-8')
-
     # These are the tokens you would store long term, someplace safe
     real_oauth_token = access_token[b'oauth_token'].decode('utf-8')
     real_oauth_token_secret = access_token[b'oauth_token_secret'].decode(
@@ -115,30 +112,12 @@ def callback():
                               access_token_key=real_oauth_token,
                               access_token_secret=real_oauth_token_secret)
 
-    # Call api.twitter.com/1.1/users/show.json?user_id={user_id}
-    real_token = oauth.Token(real_oauth_token, real_oauth_token_secret)
-    real_client = oauth.Client(consumer, real_token)
-    real_resp, real_content = real_client.request(
-        show_user_url + '?user_id=' + user_id, "GET")
-
-    if real_resp['status'] != '200':
-        error_message = "Invalid response from Twitter API GET users/show: {status}".format(
-            status=real_resp['status'])
-        return render_template('error.html', error_message=error_message)
-
-    response = json.loads(real_content.decode('utf-8'))
-
-    friends_count = response['friends_count']
-    statuses_count = response['statuses_count']
-    followers_count = response['followers_count']
-    name = response['name']
+    name = twitter_api.VerifyCredentials().name
 
     # don't keep this token and secret in memory any longer
     del oauth_store[oauth_token]
 
-    return render_template('callback-success.html', screen_name=screen_name, user_id=user_id, name=name,
-                           friends_count=friends_count, statuses_count=statuses_count, followers_count=followers_count,
-                           access_token_url=access_token_url)
+    return render_template('welcome.html', name=name)
 
 
 @app.route('/export')

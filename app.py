@@ -5,6 +5,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import json
+import twitter
 
 app = Flask(__name__)
 
@@ -28,6 +29,7 @@ app.config['APP_CONSUMER_SECRET'] = os.getenv(
 app.config.from_pyfile('config.cfg', silent=True)
 
 oauth_store = {}
+twitter_api = None
 
 
 @app.route('/')
@@ -46,7 +48,7 @@ def start():
         app.config['APP_CONSUMER_KEY'], app.config['APP_CONSUMER_SECRET'])
     client = oauth.Client(consumer)
     resp, content = client.request(request_token_url, "POST", body=urllib.parse.urlencode({
-                                   "oauth_callback": app_callback_url}))
+        "oauth_callback": app_callback_url}))
 
     if resp['status'] != '200':
         error_message = 'Invalid response, status {status}, {message}'.format(
@@ -58,7 +60,8 @@ def start():
     oauth_token_secret = request_token[b'oauth_token_secret'].decode('utf-8')
 
     oauth_store[oauth_token] = oauth_token_secret
-    return render_template('start.html', authorize_url=authorize_url, oauth_token=oauth_token, request_token_url=request_token_url)
+    return render_template('start.html', authorize_url=authorize_url, oauth_token=oauth_token,
+                           request_token_url=request_token_url)
 
 
 @app.route('/callback')
@@ -105,6 +108,13 @@ def callback():
     real_oauth_token_secret = access_token[b'oauth_token_secret'].decode(
         'utf-8')
 
+    # create python-twitter client
+    global twitter_api
+    twitter_api = twitter.Api(consumer_key=app.config['APP_CONSUMER_KEY'],
+                              consumer_secret=app.config['APP_CONSUMER_SECRET'],
+                              access_token_key=real_oauth_token,
+                              access_token_secret=real_oauth_token_secret)
+
     # Call api.twitter.com/1.1/users/show.json?user_id={user_id}
     real_token = oauth.Token(real_oauth_token, real_oauth_token_secret)
     real_client = oauth.Client(consumer, real_token)
@@ -127,13 +137,30 @@ def callback():
     del oauth_store[oauth_token]
 
     return render_template('callback-success.html', screen_name=screen_name, user_id=user_id, name=name,
-                           friends_count=friends_count, statuses_count=statuses_count, followers_count=followers_count, access_token_url=access_token_url)
+                           friends_count=friends_count, statuses_count=statuses_count, followers_count=followers_count,
+                           access_token_url=access_token_url)
+
+
+@app.route('/export')
+def export():
+    if twitter_api is None:
+        return render_template('error.html', error_message='Not authenticated yet!')
+
+    blocked_list = get_blocked_list(twitter_api)
+    return render_template('export.html', blocked_list=blocked_list)
+
+
+def get_blocked_list(twitter_api: twitter.Api):
+    blocked_list = "id, screen_name,\n"
+    for user in twitter_api.GetBlocks():
+        blocked_list += user.id + ', ' + user.screen_name + ',\n'
+    return blocked_list
 
 
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('error.html', error_message='uncaught exception'), 500
 
-  
+
 if __name__ == '__main__':
     app.run()

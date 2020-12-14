@@ -1,3 +1,4 @@
 oauth2
 Flask
 gunicorn
+python-twitter

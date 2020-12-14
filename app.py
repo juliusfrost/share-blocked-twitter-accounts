@@ -21,6 +21,7 @@ app.config['APP_CONSUMER_KEY'] = os.getenv(
     'TWAUTH_APP_CONSUMER_KEY', 'API_Key_from_Twitter')
 app.config['APP_CONSUMER_SECRET'] = os.getenv(
     'TWAUTH_APP_CONSUMER_SECRET', 'API_Secret_from_Twitter')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'SECRET_KEY')
 
 # alternatively, add your key and secret to config.cfg
 # config.cfg should look like:
@@ -111,7 +112,7 @@ def welcome():
                                          access_token_key=real_oauth_token,
                                          access_token_secret=real_oauth_token_secret)
 
-    return welcome_user()
+    return welcome_user(session['twitter_api'])
 
 
 def welcome_user(twitter_api: twitter.Api):

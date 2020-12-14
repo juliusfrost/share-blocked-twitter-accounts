@@ -6,7 +6,7 @@ import re
 
 import oauth2 as oauth
 import twitter
-from flask import Flask, render_template, request, url_for, session, redirect
+from flask import Flask, render_template, request, url_for, session, redirect, flash
 
 app = Flask(__name__)
 
@@ -154,6 +154,7 @@ def import_blocked():
     imported_accounts = request.form.get('importAccounts', None)
     if imported_accounts is not None:
         add_to_blocked(twitter_api, imported_accounts)
+        flash('Imported accounts to blocked list.')
     return render_template('import.html')
 
 

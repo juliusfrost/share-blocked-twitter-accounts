@@ -2,6 +2,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+import re
 
 import oauth2 as oauth
 import twitter
@@ -138,6 +139,30 @@ def signout():
     del session['oauth_token_secret']
     session['authenticated'] = False
     return redirect('/')
+
+
+@app.route('/import', methods=['GET', 'POST'])
+def import_blocked():
+    if not session.get('authenticated', False):
+        return render_template('error.html', error_message='Not authenticated yet!')
+    twitter_api = twitter.Api(
+        consumer_key=app.config['APP_CONSUMER_KEY'],
+        consumer_secret=app.config['APP_CONSUMER_SECRET'],
+        access_token_key=session['oauth_token'],
+        access_token_secret=session['oauth_token_secret']
+    )
+    imported_accounts = request.form.get('importAccounts', None)
+    if imported_accounts is not None:
+        add_to_blocked(twitter_api, imported_accounts)
+    return render_template('import.html')
+
+
+def add_to_blocked(twitter_api: twitter.Api, imported_accounts: str):
+    for id_or_screen_name in re.split(r'^[\s,]+', imported_accounts):
+        if id_or_screen_name.isnumeric():
+            twitter_api.CreateBlock(user_id=id_or_screen_name)
+        else:
+            twitter_api.CreateBlock(screen_name=id_or_screen_name)
 
 
 @app.route('/export')

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}success{% endblock %}
+{% block containercontent %}
+<h2>Import Blocked List</h2>
+<p>In the form, enter twitter screen names or user ids delimited by spaces or commas.</p>
+<form>
+    <div class="form-group">
+        <label for="importAccounts">Import Accounts</label>
+        <textarea class="form-control" id="importAccounts" rows="10"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+<a href="/welcome" class="btn btn-small btn-success">Back</a>
+{% endblock %}

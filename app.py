@@ -24,6 +24,10 @@ app.config['APP_CONSUMER_SECRET'] = os.getenv(
     'TWAUTH_APP_CONSUMER_SECRET', 'API_Secret_from_Twitter')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'SECRET_KEY')
 
+# Gives direct access to personal account to skip oauth. Use only when debugging locally.
+app.config['DEBUG_ACCESS_TOKEN_KEY'] = os.getenv('DEBUG_ACCESS_TOKEN_KEY', None)
+app.config['DEBUG_ACCESS_TOKEN_SECRET'] = os.getenv('DEBUG_ACCESS_TOKEN_SECRET', None)
+
 # alternatively, add your key and secret to config.cfg
 # config.cfg should look like:
 # APP_CONSUMER_KEY = 'API_Key_from_Twitter'
@@ -31,9 +35,33 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'SECRET_KEY')
 app.config.from_pyfile('config.cfg', silent=True)
 
 
+def check_authenticated(session) -> twitter.Api:
+    """
+    Create a twitter API object if necessary keys and secrets are provided.
+    :param session: Flask session object
+    :return: twitter API object or None
+    """
+    if app.debug and app.config['DEBUG_ACCESS_TOKEN_KEY'] is not None \
+            and app.config['DEBUG_ACCESS_TOKEN_SECRET'] is not None:
+        return twitter.Api(
+            consumer_key=app.config['APP_CONSUMER_KEY'],
+            consumer_secret=app.config['APP_CONSUMER_SECRET'],
+            access_token_key=app.config['DEBUG_ACCESS_TOKEN_KEY'],
+            access_token_secret=app.config['DEBUG_ACCESS_TOKEN_SECRET'],
+        )
+    else:
+        if session.get('authenticated', False):
+            return twitter.Api(
+                consumer_key=app.config['APP_CONSUMER_KEY'],
+                consumer_secret=app.config['APP_CONSUMER_SECRET'],
+                access_token_key=session['oauth_token'],
+                access_token_secret=session['oauth_token_secret']
+            )
+
+
 @app.route('/')
 def hello():
-    if session.get('authenticated', False):
+    if check_authenticated(session):
         return redirect(url_for('welcome'))
     return render_template('index.html')
 
@@ -67,7 +95,7 @@ def start():
 
 @app.route('/callback')
 def callback():
-    if session.get('authenticated', False):
+    if check_authenticated(session):
         return redirect(url_for('welcome'))
 
     # Accept the callback params, get the token and call the API to
@@ -121,36 +149,28 @@ def callback():
 
 @app.route('/welcome')
 def welcome():
-    if not session.get('authenticated', False):
+    twitter_api = check_authenticated(session)
+    if twitter_api is None:
         return render_template('error.html', error_message='Not authenticated yet!')
-    twitter_api = twitter.Api(
-        consumer_key=app.config['APP_CONSUMER_KEY'],
-        consumer_secret=app.config['APP_CONSUMER_SECRET'],
-        access_token_key=session['oauth_token'],
-        access_token_secret=session['oauth_token_secret']
-    )
     name = twitter_api.VerifyCredentials().name
     return render_template('welcome.html', name=name)
 
 
 @app.route('/signout')
 def signout():
-    del session['oauth_token']
-    del session['oauth_token_secret']
+    if 'oauth_token' in session:
+        del session['oauth_token']
+    if 'oauth_token_secret' in session:
+        del session['oauth_token_secret']
     session['authenticated'] = False
     return redirect('/')
 
 
 @app.route('/import', methods=['GET', 'POST'])
 def import_blocked():
-    if not session.get('authenticated', False):
+    twitter_api = check_authenticated(session)
+    if twitter_api is None:
         return render_template('error.html', error_message='Not authenticated yet!')
-    twitter_api = twitter.Api(
-        consumer_key=app.config['APP_CONSUMER_KEY'],
-        consumer_secret=app.config['APP_CONSUMER_SECRET'],
-        access_token_key=session['oauth_token'],
-        access_token_secret=session['oauth_token_secret']
-    )
     imported_accounts = request.form.get('importAccounts', None)
     if imported_accounts is not None:
         add_to_blocked(twitter_api, imported_accounts)
@@ -168,14 +188,9 @@ def add_to_blocked(twitter_api: twitter.Api, imported_accounts: str):
 
 @app.route('/export')
 def export():
-    if not session.get('authenticated', False):
+    twitter_api = check_authenticated(session)
+    if twitter_api is None:
         return render_template('error.html', error_message='Not authenticated yet!')
-    twitter_api = twitter.Api(
-        consumer_key=app.config['APP_CONSUMER_KEY'],
-        consumer_secret=app.config['APP_CONSUMER_SECRET'],
-        access_token_key=session['oauth_token'],
-        access_token_secret=session['oauth_token_secret']
-    )
     blocked_list = get_blocked_list(twitter_api)
     return render_template('export.html', blocked_list=blocked_list)
 

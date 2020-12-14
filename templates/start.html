@@ -2,5 +2,5 @@
 {% block title %}start{% endblock %}
 {% block containercontent %}
 <h2>Login</h2>
-<p><a href="/export" class="btn btn-small btn-success">Export Blocked List</a></p>
+<a href="{{ authorize_url }}?oauth_token={{ oauth_token }}" class="btn btn-small btn-success">Twitter Authentication</a>
 {% endblock %}

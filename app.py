@@ -61,13 +61,14 @@ def check_authenticated(session) -> twitter.Api:
 
 @app.route('/')
 def hello():
-    if check_authenticated(session):
-        return redirect(url_for('welcome'))
     return render_template('index.html')
 
 
 @app.route('/start')
 def start():
+    if check_authenticated(session):
+        return redirect(url_for('welcome'))
+
     # note that the external callback URL must be added to the whitelist on
     # the developer.twitter.com portal, inside the app settings
     app_callback_url = url_for('callback', _external=True)

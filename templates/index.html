@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block containercontent %}
-<p class="lead">Welcome to the Twitter Share Blocked App.</p>
+<p class="lead">Welcome to the Share Blocked Twitter Accounts App.</p>
 <div class="hero-unit">
-	<p>To get started, we'll need you to authorize our app to access your Twitter account. </p>
+    <p>To get started, we'll need you to authorize our app to access your Twitter account. </p>
 </div>
-<a href="/start" class="btn btn-small btn-success">Twitter Authentication</a>
+<div class="d-grid gap-2 d-md-block">
+    <a href="/start" class="btn btn-small btn-primary">Twitter Authentication</a>
+</div>
 {% endblock %}

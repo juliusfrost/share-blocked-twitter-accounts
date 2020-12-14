@@ -64,8 +64,8 @@ def start():
 
 @app.route('/welcome')
 def welcome():
-    if 'twitter_api' in session:
-        welcome_user(session['twitter_api'])
+    if session.get('authenticated', False):
+        welcome_user(session)
 
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle
@@ -107,25 +107,35 @@ def welcome():
         'utf-8')
 
     # create python-twitter client
-    session['twitter_api'] = twitter.Api(consumer_key=app.config['APP_CONSUMER_KEY'],
-                                         consumer_secret=app.config['APP_CONSUMER_SECRET'],
-                                         access_token_key=real_oauth_token,
-                                         access_token_secret=real_oauth_token_secret)
+    session['authenticated'] = True
+    session['oauth_token'] = real_oauth_token
+    session['oauth_token_secret'] = real_oauth_token_secret
 
-    return welcome_user(session['twitter_api'])
+    return welcome_user(session)
 
 
-def welcome_user(twitter_api: twitter.Api):
+def welcome_user(app_session):
+    twitter_api = twitter.Api(
+        consumer_key=app.config['APP_CONSUMER_KEY'],
+        consumer_secret=app.config['APP_CONSUMER_SECRET'],
+        access_token_key=app_session['oauth_token'],
+        access_token_secret=app_session['oauth_token_secret']
+    )
     name = twitter_api.VerifyCredentials().name
     return render_template('welcome.html', name=name)
 
 
 @app.route('/export')
 def export():
-    if 'twitter_api' not in session:
+    if not session.get('authenticated', False):
         return render_template('error.html', error_message='Not authenticated yet!')
-
-    blocked_list = get_blocked_list(session['twitter_api'])
+    twitter_api = twitter.Api(
+        consumer_key=app.config['APP_CONSUMER_KEY'],
+        consumer_secret=app.config['APP_CONSUMER_SECRET'],
+        access_token_key=session['oauth_token'],
+        access_token_secret=session['oauth_token_secret']
+    )
+    blocked_list = get_blocked_list(twitter_api)
     return render_template('export.html', blocked_list=blocked_list)
 
 

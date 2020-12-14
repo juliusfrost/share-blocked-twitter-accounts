@@ -5,7 +5,7 @@ import urllib.request
 
 import oauth2 as oauth
 import twitter
-from flask import Flask, render_template, request, url_for, g
+from flask import Flask, render_template, request, url_for
 
 app = Flask(__name__)
 
@@ -27,6 +27,9 @@ app.config['APP_CONSUMER_SECRET'] = os.getenv(
 # APP_CONSUMER_KEY = 'API_Key_from_Twitter'
 # APP_CONSUMER_SECRET = 'API_Secret_from_Twitter'
 app.config.from_pyfile('config.cfg', silent=True)
+
+oauth_store = {}
+twitter_api = None
 
 
 @app.route('/')
@@ -56,15 +59,16 @@ def start():
     oauth_token = request_token[b'oauth_token'].decode('utf-8')
     oauth_token_secret = request_token[b'oauth_token_secret'].decode('utf-8')
 
-    g[oauth_token] = oauth_token_secret
+    oauth_store[oauth_token] = oauth_token_secret
     return render_template('start.html', authorize_url=authorize_url, oauth_token=oauth_token,
                            request_token_url=request_token_url)
 
 
 @app.route('/welcome')
 def welcome():
-    if 'twitter_api' in g:
-        welcome_user(g['twitter_api'])
+    global twitter_api
+    if isinstance(twitter_api, twitter.Api):
+        welcome_user()
 
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle
@@ -75,18 +79,18 @@ def welcome():
     # if the OAuth request was denied, delete our local token
     # and show an error message
     if oauth_denied:
-        if oauth_denied in g:
-            del g[oauth_denied]
+        if oauth_denied in oauth_store:
+            del oauth_store[oauth_denied]
         return render_template('error.html', error_message="the OAuth request was denied by this user")
 
     if not oauth_token or not oauth_verifier:
         return render_template('error.html', error_message="callback param(s) missing")
 
     # unless oauth_token is still stored locally, return error
-    if oauth_token not in g:
+    if oauth_token not in oauth_store:
         return render_template('error.html', error_message="oauth_token (" + oauth_token + ") not found locally")
 
-    oauth_token_secret = g[oauth_token]
+    oauth_token_secret = oauth_store[oauth_token]
 
     # if we got this far, we have both callback params and we have
     # found this token locally
@@ -106,25 +110,26 @@ def welcome():
         'utf-8')
 
     # create python-twitter client
-    g['twitter_api'] = twitter.Api(consumer_key=app.config['APP_CONSUMER_KEY'],
-                                   consumer_secret=app.config['APP_CONSUMER_SECRET'],
-                                   access_token_key=real_oauth_token,
-                                   access_token_secret=real_oauth_token_secret)
+    twitter_api = twitter.Api(consumer_key=app.config['APP_CONSUMER_KEY'],
+                              consumer_secret=app.config['APP_CONSUMER_SECRET'],
+                              access_token_key=real_oauth_token,
+                              access_token_secret=real_oauth_token_secret)
 
-    return welcome_user(g['twitter_api'])
+    return welcome_user()
 
 
-def welcome_user(twitter_api: twitter):
+def welcome_user():
+    assert isinstance(twitter_api, twitter.Api)
     name = twitter_api.VerifyCredentials().name
     return render_template('welcome.html', name=name)
 
 
 @app.route('/export')
 def export():
-    if 'twitter_api' not in g:
+    if twitter_api is None:
         return render_template('error.html', error_message='Not authenticated yet!')
 
-    blocked_list = get_blocked_list(g['twitter_api'])
+    blocked_list = get_blocked_list(twitter_api)
     return render_template('export.html', blocked_list=blocked_list)
 
 

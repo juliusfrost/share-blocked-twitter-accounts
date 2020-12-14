@@ -65,7 +65,7 @@ def start():
 @app.route('/welcome')
 def welcome():
     if session.get('authenticated', False):
-        welcome_user(session)
+        return welcome_user(session)
 
     # Accept the callback params, get the token and call the API to
     # display the logged-in user's name and handle

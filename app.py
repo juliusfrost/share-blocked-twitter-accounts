@@ -10,7 +10,7 @@ from flask import Flask, render_template, request, url_for, session, redirect, f
 
 app = Flask(__name__)
 
-app.debug = False
+app.debug = True
 
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
@@ -175,17 +175,38 @@ def import_blocked():
     if request.method == 'POST':
         imported_accounts = request.form.get('importAccounts', None)
         if imported_accounts is not None:
-            add_to_blocked(twitter_api, imported_accounts)
-            flash('Imported accounts to blocked list.')
+            stats = add_to_blocked(twitter_api, imported_accounts)
+            if stats.get('failed') == 0:
+                flash('Imported {}/{} accounts to blocked list.'.format(stats['success'], stats['total']), 'success')
+            else:
+                if stats['success'] == 0:
+                    flash('Imported {}/{} accounts to blocked list.'.format(stats['success'], stats['total']), 'danger')
+                else:
+                    flash('Imported {}/{} accounts to blocked list.'.format(stats['success'], stats['total']),
+                          'warning')
     return render_template('import.html')
 
 
 def add_to_blocked(twitter_api: twitter.Api, imported_accounts: str):
-    for id_or_screen_name in re.split(r'^[\s,]+', imported_accounts):
-        if id_or_screen_name.isnumeric():
-            twitter_api.CreateBlock(user_id=id_or_screen_name)
-        else:
-            twitter_api.CreateBlock(screen_name=id_or_screen_name)
+    failed = 0
+    success = 0
+    total = 0
+    success_accounts = []
+    failed_accounts = []
+    for id_or_screen_name in re.findall(r'[^\s,]+', imported_accounts):
+        try:
+            if id_or_screen_name.isnumeric():
+                twitter_api.CreateBlock(user_id=id_or_screen_name)
+            else:
+                twitter_api.CreateBlock(screen_name=id_or_screen_name)
+            success += 1
+            success_accounts.append(id_or_screen_name)
+        except twitter.error.TwitterError:
+            failed += 1
+            failed_accounts.append(id_or_screen_name)
+        total += 1
+    return dict(success=success, failed=failed, total=total, failed_accounts=failed_accounts,
+                success_accounts=success_accounts)
 
 
 @app.route('/export')

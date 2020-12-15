@@ -16,6 +16,14 @@
 <body>
 <div class="container-md">
     <h1 class="display-1">Share Blocked Twitter Accounts</h1>
+
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
     {% block containercontent %}{% endblock %}
     <hr>
     <div class="footer">
